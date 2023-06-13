@@ -97,9 +97,9 @@ The Floating-Point Control and Status Register (fcsr) must have thread storage
 duration in accordance with C11 section 7.6 "Floating-point environment
 <fenv.h>".
 
-=== Vector Register Convention
+=== Soft-Vector Register Convention
 
-.Vector register convention
+.Soft-vector register convention
 [%autowidth]
 |===
 | Name    | ABI Mnemonic | Meaning                      | Preserved across calls?
@@ -111,10 +111,9 @@ duration in accordance with C11 section 7.6 "Floating-point environment
 | vxsat   |              | Vector fixed-point saturation flag register  | No
 |===
 
-
-Vector registers are not used for passing arguments or return values; we
-intend to define a new calling convention variant to allow that as a future
-software optimization.
+Vector registers are not used for passing arguments or return values; see the
+"Hard-vector calling convention" section  for a calling convention that allows
+passing arguments in V registers.
 
 The `vxrm` and `vxsat` fields of `vcsr` are not preserved across calls and their
 values are unspecified upon entry.
@@ -125,6 +124,34 @@ that `vstart` is zero upon return from a procedure call.
 NOTE: Application software should normally not write `vstart` explicitly.
 Any procedure that does explicitly write `vstart` to a nonzero value must zero
 `vstart` before either returning or calling another procedure.
+
+=== Hard-Vector Register Convention
+
+.Hard-vector register convention
+[%autowidth]
+|===
+| Name      | ABI Mnemonic | Meaning                                      | Preserved across calls?
+
+| v0        | vp0          | Predicate register                           | Yes
+| v1 - v9   | vt0 - vt8    | Temporary registers                          | No
+| v10 - v17 | va0 - va7    | Argument registers                           | No
+| v18 - v31 | vt9 - vt23   | Temporary registers                          | No
+| vl        |              | Vector length                                | Yes
+| vtype     |              | Vector data type register                    | Yes
+| vxrm      |              | Vector fixed-point rounding mode register    | No
+| vxsat     |              | Vector fixed-point saturation flag register  | No
+|===
+
+This calling convention allows arguments to be passed in vector registers.
+
+The vector layour registers (predicate, length, and type) are preserved across
+calls to aid 
+
+The `vxrm` and `vxsat` fields of `vcsr` are not preserved across calls and their
+values are unspecified upon entry.
+
+Procedures may assume that `vstart` is zero upon entry. Procedures may assume
+that `vstart` is zero upon return from a procedure call.
 
 == Procedure Calling Convention
 
@@ -361,6 +388,12 @@ ILP32E:: <<ILP32E Calling Convention,ILP32E calling-convention>> only,
 hardware floating-point calling convention is not used (i.e. <<ELFCLASS32,ELFCLASS32>>,
 <<EF_RISCV_FLOAT_ABI_SOFT,EF_RISCV_FLOAT_ABI_SOFT>>, and <<EF_RISCV_RVE,EF_RISCV_RVE>>).
 
+[[abi-ilp32v]]
+ILP32V:: ILP32 with hardware floating-point and hardware vector calling
+convention, for ABI_FLEN=64 (i.e. <<ELFCLASS32,ELFCLASS32>>,
+<<EF_RISCV_FLOAT_ABI_DOUBLE,EF_RISCV_FLOAT_ABI_DOUBLE>>, and
+<<EF_RISCV_VECTOR_ABI_HARD>>.)
+
 [[abi-lp64]]
 LP64:: Integer calling-convention only, hardware
 floating-point calling convention is not used (i.e. <<ELFCLASS64,ELFCLASS64>> and
@@ -381,6 +414,12 @@ LP64Q:: LP64 with hardware floating-point calling
 convention for ABI_FLEN=128 (i.e. <<ELFCLASS64,ELFCLASS64>> and
 <<EF_RISCV_FLOAT_ABI_QUAD,EF_RISCV_FLOAT_ABI_QUAD>>).
 
+[[abi-lp64v]]
+LP64V:: LP64 with hardware floating-point and hardware vector calling
+convention, for ABI_FLEN=64 (i.e. <<ELFCLASS64,ELFCLASS64>>,
+<<EF_RISCV_FLOAT_ABI_DOUBLE,EF_RISCV_FLOAT_ABI_DOUBLE>>, and
+<<EF_RISCV_VECTOR_ABI_HARD>>.)
+
 The ILP32* ABIs are only compatible with RV32* ISAs, and the LP64* ABIs are
 only compatible with RV64* ISAs. A future version of this specification may
 define an ILP32 ABI for the RV64 ISA, but currently this is not a supported
@@ -392,6 +431,8 @@ extension, and the LP64Q ABI requires the Q ISA extension.
 NOTE: This means code targeting the Zfinx extension always uses the ILP32,
 ILP32E or LP64 integer calling-convention only ABIs as there is no dedicated
 hardware floating-point register file.
+
+The *V ABIs require the *V and *D ISA extensions.
 
 === Default ABIs
 
